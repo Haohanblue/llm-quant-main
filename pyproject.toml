@@ -16,6 +16,9 @@ tushare = "^1.4.13"
 pyecharts = "^2.0.7"
 python-dotenv = "^1.0.1"
 openai = "^1.57.4"
+fastapi = "^0.115.6"
+uvicorn = "^0.34.0"
+pydantic = "^2.10.3"
 
 
 [[tool.poetry.source]]
