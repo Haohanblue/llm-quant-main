@@ -1,0 +1,12 @@
+{
+    "factor_list": [
+        "pe",
+        "pb",
+        "rsi_hfq_12",
+        "turnover_rate",
+        "atr_hfq"
+    ],
+    "formula": "(-0.1 * pe - 0.2 * pb + 0.15 * rsi_hfq_12 + 0.25 * turnover_rate - 0.1 * atr_hfq) + (-0.2 * (pe + pb) + 0.4 * rsi_hfq_12/100 + 0.15 * turnover_rate - 0.1 * atr_hfq) + (-0.1 * (sqrt(pe) + log(1 + pb)) + 0.3 * rsi_hfq_12/10 + 0.2 * turnover_rate) / 3",
+    "pandas_formula": "((-0.1 * df['pe'] - 0.2 * df['pb'] + 0.15 * df['rsi_hfq_12'] + 0.25 * df['turnover_rate'] - 0.1 * df['atr_hfq']) + (-0.2 * (df['pe'] + df['pb']) + 0.4 * df['rsi_hfq_12']/100 + 0.15 * df['turnover_rate'] - 0.1 * df['atr_hfq']) + (-0.1 * (np.sqrt(df['pe']) + np.log(1 + df['pb'])) + 0.3 * df['rsi_hfq_12']/10 + 0.2 * df['turnover_rate'])) / 3",
+    "explanation": "选择的最终公式整合了估值指标（pe和pb），动量指标（rsi_hfq_12），流动性指标（turnover_rate），以及波动性指标（atr_hfq）。这些因子在多种组合中衡量股票价值，同时调整权重以最佳匹配整体市场动量和风险水平。公式采用多种数学运算以增强表现力。"
+}
