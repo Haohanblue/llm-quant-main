@@ -1,0 +1,13 @@
+{
+    "START_DATE": "2020-01-01",
+    "END_DATE": "2024-11-01",
+    "ROTATION_DAYS": 20,
+    "NUM_STOCKS": 3,
+    "INITIAL_MONEY": 1000000,
+    "COMMISSION": 0.00025,
+    "TAX": 0.0005,
+    "SLIPPAGE": 0.001,
+    "STOP_PROFIT": 0.4,
+    "STOP_LOSS": 0.2,
+    "STOCK_POOL_TYPE": "中证500"
+}

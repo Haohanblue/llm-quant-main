@@ -6,8 +6,8 @@ from openai import OpenAI
 load_dotenv(verbose=True)
 client = OpenAI(
 # This is the default and can be omitted
-base_url='https://api.gptsapi.net/v1',
-api_key=os.environ.get("OPENAI_API_KEY"),
+# base_url='https://api.gptsapi.net/v1',
+api_key=os.environ.get("OPENAI_REAL_API_KEY"),
 )
 def get_GPT_response(message,model):
   

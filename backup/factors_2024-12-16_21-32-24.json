@@ -1,0 +1,18 @@
+{
+    "factor_list": [
+        "pe",
+        "pb",
+        "ps",
+        "atr_hfq",
+        "macd_dif_hfq",
+        "kdj_hfq",
+        "cci_hfq",
+        "vr_hfq",
+        "dmi_pdi_hfq",
+        "dmi_mdi_hfq"
+    ],
+    "formula": "(-0.1*df['pe'] - 0.1*df['pb'] - 0.1*df['ps'] + 0.2*df['macd_dif_hfq'] - 0.1*df['atr_hfq'] + 0.15*df['kdj_hfq'] + 0.1*df['cci_hfq'] + 0.15*df['vr_hfq'] + 0.05*df['dmi_pdi_hfq'] - 0.05*df['dmi_mdi_hfq'])",
+    "pandas_formula": "(-0.1*df['pe'].apply(lambda x: max(x, 0)) - 0.1*df['pb'].apply(lambda x: max(x, 0)) - 0.1*df['ps'].apply(lambda x: max(x, 0)) + 0.2*df['macd_dif_hfq'] - 0.1*df['atr_hfq'] + 0.15*df['kdj_hfq'] + 0.1*df['cci_hfq'] + 0.15*df['vr_hfq'] + 0.05*df['dmi_pdi_hfq'] - 0.05*df['dmi_mdi_hfq'])",
+    "explanation": "该公式结合估值因子与市场动能指标的综合考量，即抓住潜在被低估的机会，同时识别市场上行的动能及成交活跃度，适合在当前熊市中寻找具有上涨潜力的股票。"
+
+}

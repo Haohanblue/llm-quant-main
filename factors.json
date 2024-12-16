@@ -2,11 +2,22 @@
     "factor_list": [
         "pe",
         "pb",
-        "rsi_hfq_12",
-        "turnover_rate",
-        "atr_hfq"
+        "ps",
+        "rsi_hfq_6",
+        "vol",
+        "float_share",
+        "kdj_k_hfq",
+        "kdj_d_hfq",
+        "ema_hfq_5",
+        "ema_hfq_20",
+        "close_hfq",
+        "boll_mid_hfq",
+        "boll_upper_hfq",
+        "boll_lower_hfq",
+        "macd_hfq",
+        "macd_dif_hfq"
     ],
-    "formula": "(-0.1 * pe - 0.2 * pb + 0.15 * rsi_hfq_12 + 0.25 * turnover_rate - 0.1 * atr_hfq) + (-0.2 * (pe + pb) + 0.4 * rsi_hfq_12/100 + 0.15 * turnover_rate - 0.1 * atr_hfq) + (-0.1 * (sqrt(pe) + log(1 + pb)) + 0.3 * rsi_hfq_12/10 + 0.2 * turnover_rate) / 3",
-    "pandas_formula": "((-0.1 * df['pe'] - 0.2 * df['pb'] + 0.15 * df['rsi_hfq_12'] + 0.25 * df['turnover_rate'] - 0.1 * df['atr_hfq']) + (-0.2 * (df['pe'] + df['pb']) + 0.4 * df['rsi_hfq_12']/100 + 0.15 * df['turnover_rate'] - 0.1 * df['atr_hfq']) + (-0.1 * (np.sqrt(df['pe']) + np.log(1 + df['pb'])) + 0.3 * df['rsi_hfq_12']/10 + 0.2 * df['turnover_rate'])) / 3",
-    "explanation": "选择的最终公式整合了估值指标（pe和pb），动量指标（rsi_hfq_12），流动性指标（turnover_rate），以及波动性指标（atr_hfq）。这些因子在多种组合中衡量股票价值，同时调整权重以最佳匹配整体市场动量和风险水平。公式采用多种数学运算以增强表现力。"
+    "formula": "(-0.2*pe/(pe+pb+ps) + 0.3*rsi_hfq_6 - 0.5*vol/float_share + 0.4*(kdj_k_hfq-kdj_d_hfq)/(kdj_k_hfq+kdj_d_hfq) + 0.6*(ema_hfq_5-ema_hfq_20)/(ema_hfq_5+ema_hfq_20) + (close_hfq-boll_mid_hfq)/(boll_upper_hfq-boll_lower_hfq) + 0.5*macd_hfq/(macd_dif_hfq+1))/3",
+    "pandas_formula": "((-0.2*df['pe']/(df['pe'] + df['pb'] + df['ps']) + 0.3*df['rsi_hfq_6'] - 0.5*df['vol']/df['float_share'] + 0.4*(df['kdj_k_hfq'] - df['kdj_d_hfq'])/(df['kdj_k_hfq'] + df['kdj_d_hfq']) + 0.6*(df['ema_hfq_5'] - df['ema_hfq_20'])/(df['ema_hfq_5'] + df['ema_hfq_20']) + (df['close_hfq'] - df['boll_mid_hfq'])/(df['boll_upper_hfq'] - df['boll_lower_hfq']) + 0.5*df['macd_hfq']/(df['macd_dif_hfq'] + 1))/3)",
+    "explanation": "该公式结合多种属性的因子以提供一个多视角的选股工具，从估值、技术指标和市场情绪等方面评估股票的潜在收益能力。量化分析中处理了量纲一致性问题，使各因子可以互相比较，为超额Alpha策略提供支撑。"
 }

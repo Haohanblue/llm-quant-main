@@ -20,6 +20,13 @@ json_dict = json.loads(json_str)
 print("=====json字典=====")
 print(json_dict)
 ## 保存json字典到文件
+## 每次先将上一次的文件，转移至备份文件backup文件夹下，如果没有则创建，同时重命名为当前的时间
+import os
+import shutil
+import time
+if not os.path.exists("backup"):
+    os.mkdir("backup")
+shutil.move("factors.json", "backup/factors_"+time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())+".json")
 with open('factors.json', 'w',encoding='utf-8') as f:
     json.dump(json_dict, f, ensure_ascii=False, indent=4)
 print("=====保存到文件成功=====")
