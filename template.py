@@ -44,7 +44,6 @@ CoT_consistent_refine_factors_prompt_chinese = """
 并且要与最终公式一起写入，作为同一个公式里的内容。你可以对所给指标进行自由组合，
 你可以天马行空的想象，基于选择的指标，进行组合、基本运算（根号、平方、加减乘除），聚合运算（最大、最小、平均等，中位数），
 最终是要转化为基于df的公式的，同时你可以根据用户信息或者自行分配各自的权重。
-最重要的是，你要自己处理解决量纲的问题，请直接在公式中处理。
     {{ 插入你的三组初步公式和相应的解释。}}
 4. 从以下几个方面评估上述初步公式的质量：解释的充分性和逻辑性。请给出你的评估结果，分数从1（最低）到5（最高）。
     {{ 插入你的评估思路。}}
@@ -53,7 +52,7 @@ CoT_consistent_refine_factors_prompt_chinese = """
 6. 取最新公式的平均值，给出最终公式。输出你的最终概率公式，以JSON格式输出，记得带上```json```。
     {{ 插入你的答案，最终公式必须是JSON格式，包含三个键： "factor_list"、"formula"、"pandas_formula"、
     "explanation"。factor_list是你在材料中使用的原始因子，formula是你从原始因子生成的最终公式，
-    pandas_formula是将公式转换为pandas样式，该公式必须是一个表达式，并且内嵌量纲的处理过程，以及所有过程，写到一个公式里。如：
+    pandas_formula是将公式转换为pandas样式，该公式必须是一个表达式，以及所有过程，写到一个公式里。如：
         -0.1*df['pe'].apply(lambda x: x if x > 0 else 0) -
         0.2*df['pb'].apply(lambda x: x if x > 0 else 0) -
         0.3*df['ps'].apply(lambda x: x if x > 0 else 0)

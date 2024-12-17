@@ -767,7 +767,7 @@ class BacktestManager:
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trade_analyzer')
         cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe_ratio', riskfreerate=0.01)  # 设置年化无风险利率为1%
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe_ratio', riskfreerate=0.03)  # 设置年化无风险利率为1%
 
         # 运行回测
         strategies = cerebro.run()
@@ -778,109 +778,82 @@ class BacktestManager:
         total_time = end_time - start_time
         logging.info(f"\n回测运行时间: {total_time:.2f} 秒")
 
-        # 打印最终投资组合价值
+
+        # 获取最终投资组合价值和现金
         final_value = cerebro.broker.getvalue()
         final_cash = cerebro.broker.getcash()
+        strategy_return = final_value - initial_value
+
+        strategy_return_rate = ((strategy_return) / initial_value) * 100
+
         logging.info(f'最终投资组合价值: {final_value:.2f}')
         logging.info(f'最终现金: {final_cash:.2f}')
-        # 计算并打印回测结果指标
-        strategy_return = final_value - initial_value
-        strategy_return_rate = ((strategy_return) / initial_value) * 100
         logging.info(f'策略收益: {strategy_return:.2f}')
         logging.info(f'收益率: {strategy_return_rate:.2f}%')
 
-        drawdown = strategy.analyzers.drawdown.get_analysis()
-        trade_analyzer = strategy.analyzers.trade_analyzer.get_analysis()
-        returns = strategy.analyzers.returns.get_analysis()
-        sharpe_ratio_analyzer = strategy.analyzers.sharpe_ratio.get_analysis()
-        # print("returns:", returns)
-        # print("sharpe:", sharpe_ratio_analyzer)
+        # 策略每日收益率
+        strategy_daily_returns = pd.Series(strategy.daily_returns, index=pd.to_datetime(strategy.dates))
+        strategy_daily_returns = strategy_daily_returns.dropna()
 
-        # 计算胜率
-        winning_trades = 0
-        total_trades = 0
-
-        # 检查 'won' 键是否存在
-        if 'won' in trade_analyzer and 'total' in trade_analyzer['won']:
-            winning_trades = trade_analyzer['won']['total']
-        else:
-            winning_trades = 0
-
-        # 检查 'total' 键是否存在，并且 'open' 和 'closed' 键是否存在
-        if 'total' in trade_analyzer:
-            total_open = trade_analyzer['total'].get('open', 0)
-            total_closed = trade_analyzer['total'].get('closed', 0)
-            total_trades = total_open + total_closed
-        else:
-            total_trades = 0
-
-        if total_trades > 0:
-            win_rate = (winning_trades / total_trades) * 100
-        else:
-            win_rate = 0
-
-        logging.info(f"胜率: {win_rate:.2f}%")
-
-        # 处理 Sharpe 比率
-        if sharpe_ratio_analyzer and 'sharperatio' in sharpe_ratio_analyzer and sharpe_ratio_analyzer['sharperatio'] is not None:
-            sharpe = sharpe_ratio_analyzer['sharperatio']
-            logging.info(f"夏普比率: {sharpe:.4f}")
-        else:
-            sharpe = 0
-            logging.info("夏普比率: 无数据")
-
-        # 其他指标的处理（确保所有分析器结果都进行相应的检查）
-        # 例如，计算最大回撤
-        if 'max' in drawdown and 'drawdown' in drawdown['max']:
-            max_drawdown = drawdown['max']['drawdown']
-        else:
-            max_drawdown = 0
-        logging.info(f"最大回撤: {max_drawdown:.2f}%")
-
-        # 计算基准收益
-        # 使用基准的日收益率累积计算
+        # 基准每日收益率
         benchmark_df_sorted = benchmark_df.sort_values('trade_date')
         benchmark_df_sorted['daily_return'] = benchmark_df_sorted['close'].pct_change().fillna(0)
-        benchmark_df_sorted['cumulative_return'] = (1 + benchmark_df_sorted['daily_return']).cumprod() - 1
-        benchmark_df_sorted['cumulative_return'] = benchmark_df_sorted['cumulative_return'] * 100
-        benchmark_return = benchmark_df_sorted['cumulative_return'].iloc[-1]
-        logging.info(f"基准收益: {benchmark_return:.2f}%")
+        benchmark_returns = pd.Series(benchmark_df_sorted['daily_return'].values, 
+                                    index=pd.to_datetime(benchmark_df_sorted['trade_date']))
 
-        # 计算Alpha和Beta
-        # 首先计算策略的日收益率
-        strategy_daily_returns = pd.Series(strategy.daily_returns, index=pd.to_datetime(strategy.dates))
-        if strategy_daily_returns.iloc[0] == 0:
-            strategy_daily_returns = strategy_daily_returns.iloc[1:]
-        strategy_daily_returns = strategy_daily_returns[~strategy_daily_returns.index.duplicated(keep='first')]
-
-        # 计算基准的日收益率
-        benchmark_returns = benchmark_df_sorted['daily_return']
-        benchmark_returns.index = pd.to_datetime(benchmark_df_sorted['trade_date'])
-
-        # 对齐日期
+        # 对齐数据
         combined_returns = pd.concat([strategy_daily_returns, benchmark_returns], axis=1, join='inner')
         combined_returns.columns = ['strategy', 'benchmark']
+        combined_returns = combined_returns.dropna()
 
-        # 计算Beta和Alpha
+        # 计算年化收益率
+        n = len(combined_returns) / 252
+        strategy_total_return = (1 + combined_returns['strategy']).prod() - 1
+        strategy_annualized_return = (1 + strategy_total_return) ** (1 / n) - 1
+
+        benchmark_total_return = (1 + combined_returns['benchmark']).prod() - 1
+        benchmark_annualized_return = (1 + benchmark_total_return) ** (1 / n) - 1
+
+        # 计算Alpha和Beta
         covariance = combined_returns['strategy'].cov(combined_returns['benchmark'])
         benchmark_variance = combined_returns['benchmark'].var()
         beta = covariance / benchmark_variance if benchmark_variance != 0 else 0
-        alpha = combined_returns['strategy'].mean() - beta * combined_returns['benchmark'].mean()
 
-        logging.info(f"Beta: {beta:.4f}")
-        logging.info(f"Alpha: {alpha:.4f}")
+        risk_free_rate = 0.03  # 无风险利率
+        alpha = strategy_annualized_return - (risk_free_rate + beta * (benchmark_annualized_return - risk_free_rate))
 
-        # 计算夏普比率
-        # 使用backtrader的分析器结果
-        if 'sharpe_ratio' in sharpe_ratio_analyzer and 'sharperatio' in sharpe_ratio_analyzer and sharpe_ratio_analyzer['sharperatio'] is not None:
-            sharpe = sharpe_ratio_analyzer['sharperatio']
-            logging.info(f"夏普比率 (Backtrader 分析器): {sharpe:.4f}")
-        else:
-            # 如果backtrader的分析器没有结果，使用手动计算
-            risk_free_rate = 0.01  # 年化无风险利率为1%
-            excess_returns = strategy_daily_returns - risk_free_rate / 252
-            sharpe = excess_returns.mean() / excess_returns.std() * np.sqrt(252) if excess_returns.std() != 0 else 0
-            logging.info(f"夏普比率 (手动计算): {sharpe:.4f}")
+        # 策略和基准的波动率
+        strategy_volatility = combined_returns['strategy'].std() * np.sqrt(252)
+        benchmark_volatility = combined_returns['benchmark'].std() * np.sqrt(252)
+
+        # 夏普比率
+        sharpe_ratio = (strategy_annualized_return - risk_free_rate) / strategy_volatility if strategy_volatility != 0 else 0
+
+        # Sortino比率（单位下行风险下的超额收益）
+        downside_returns = combined_returns['strategy'][combined_returns['strategy'] < 0]
+        downside_volatility = downside_returns.std() * np.sqrt(252)
+        sortino_ratio = (strategy_annualized_return - risk_free_rate) / downside_volatility if downside_volatility != 0 else 0
+
+        # 信息比率（IR）
+        excess_returns = combined_returns['strategy'] - combined_returns['benchmark']
+        tracking_error = excess_returns.std() * np.sqrt(252)
+        information_ratio = excess_returns.mean() / tracking_error if tracking_error != 0 else 0
+
+        # 最大回撤
+        cum_returns = (1 + combined_returns['strategy']).cumprod()
+        peak = cum_returns.cummax()
+        drawdown = (cum_returns - peak) / peak
+        max_drawdown = drawdown.min()
+
+        # 盈亏比
+        total_profit = combined_returns['strategy'][combined_returns['strategy'] > 0].sum()
+        total_loss = abs(combined_returns['strategy'][combined_returns['strategy'] < 0].sum())
+        profit_loss_ratio = (total_profit / total_loss) if total_loss != 0 else 0
+
+        # 计算胜率
+        winning_trades = (combined_returns['strategy'] > 0).sum()
+        total_trades = len(combined_returns['strategy'])
+        win_rate = (winning_trades / total_trades) * 100 if total_trades > 0 else 0
 
         # 计算最大连涨天数和最大连跌天数
         consecutive_gains = (strategy_daily_returns > 0).astype(int).groupby(
@@ -980,23 +953,35 @@ class BacktestManager:
 
         # 额外输出评估指标
         logging.info("\n=== 策略评估指标 ===")
+        # 输出指标
         logging.info(f"策略收益: {strategy_return:.2f}")
-        logging.info(f"收益率: {strategy_return_rate:.2f}%")
-        logging.info(f"基准收益: {benchmark_return:.2f}%")
+        logging.info(f"策略总收益率: {strategy_total_return:.4%}")
+        logging.info(f"基准总收益率: {benchmark_total_return:.4%}")
+        logging.info(f"策略年化收益率: {strategy_annualized_return:.4%}")
+        logging.info(f"基准年化收益率: {benchmark_annualized_return:.4%}")
         logging.info(f"Alpha: {alpha:.4f}")
         logging.info(f"Beta: {beta:.4f}")
-        logging.info(f"夏普比率: {sharpe:.4f}" if sharpe else "夏普比率: 无数据")
-        logging.info(f"最大回撤: {max_drawdown:.2f}%")
+        logging.info(f"策略波动率: {strategy_volatility:.4%}")
+        logging.info(f"基准波动率: {benchmark_volatility:.4%}")
+        logging.info(f"夏普比率: {sharpe_ratio:.4f}")
+        logging.info(f"Sortino比率: {sortino_ratio:.4f}")
+        logging.info(f"信息比率: {information_ratio:.4f}")
+        logging.info(f"最大回撤: {max_drawdown:.4%}")
+        logging.info(f"盈亏比: {profit_loss_ratio:.2f}")
         logging.info(f"胜率: {win_rate:.2f}%")
         logging.info(f"最大连涨天数: {int(max_consecutive_gains)} 天")
         logging.info(f"最大连跌天数: {int(max_consecutive_losses)} 天")
+        
+
+        logging.info(f"收益率: {strategy_return_rate:.2f}%")
+
         result = {
             "strategy_return": strategy_return,
             "strategy_return_rate": strategy_return_rate,
-            "benchmark_return": benchmark_return,
+            "benchmark_return": benchmark_total_return,
             "alpha": alpha,
             "beta": beta,
-            "sharpe": sharpe,
+            "sharpe": sharpe_ratio,
             "max_drawdown": max_drawdown,
             "win_rate": win_rate,
             "max_consecutive_gains": int(max_consecutive_gains),
@@ -1035,10 +1020,10 @@ if __name__ == '__main__':
         "中小100": '399005.SZ',
     }
     # 定义回测参数
-    START_DATE = '2020-01-01' # 回测开始日期
-    END_DATE = '2024-11-01' # 回测结束日期
+    START_DATE = '2022-01-01' # 回测开始日期
+    END_DATE = '2024-12-16' # 回测结束日期
     ROTATION_DAYS = 20     # 轮动天数
-    NUM_STOCKS = 3        # 每次轮动选股数量
+    NUM_STOCKS = 12        # 每次轮动选股数量
     INITIAL_MONEY = 1000000  # 初始资金
     COMMISSION = 0.00025  # 交易佣金比例
     TAX = 0.0005         # 交易税比例
