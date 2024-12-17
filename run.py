@@ -169,7 +169,21 @@ class DataHandler:
             stock_df['is_suspended'] = stock_df['open'].isna()
 
             # 填充停牌日的价格数据为0或其他适当的值
-            stock_df[['open', 'high', 'low', 'close', 'volume']] = stock_df[['open', 'high', 'low', 'close', 'volume']].fillna(0)
+            # 对于价格列，当数据为空时表示停牌，用上一日的收盘价进行前向填充
+            # 首先对volume单独处理，成交量可以为0
+            stock_df['volume'] = stock_df['volume'].fillna(0)
+
+            # 对价格数据进行前值填充，对于第一天如果为空可再次填充为前值或直接丢弃
+            # 这里的逻辑是：如果当日停牌，那么 open、high、low、close 都将使用前一天的收盘价填充
+            # 先使用前日收盘价填充当日的所有价位
+            stock_df[['open', 'high', 'low', 'close']] = stock_df[['open', 'high', 'low', 'close']].ffill()
+
+            # 对于首日数据如果仍为空，用首个有效数据填充或者删除该日期
+            # 若仍有NaN，说明前面交易日没有数据，可直接用第一个非空值填充或根据需求处理
+            stock_df[['open', 'high', 'low', 'close']] = stock_df[['open', 'high', 'low', 'close']].fillna(method='ffill')
+
+            # 如果仍然有缺失，可以考虑用一个默认值（如第一条有效记录的收盘价）或者抛出异常
+
 
             # 设置日期为索引
             stock_df.set_index('trade_date', inplace=True)
@@ -261,7 +275,8 @@ class StrategyHandler(bt.Strategy):
         ('stop_loss', 0.05),        # 止损比例
         ('fee',0.00025),
         ('tax',0.0005),
-        ('formula_data',None)
+        ('formula_data',None),
+        ('stock_level',0.8)
     )
 
     def __init__(self):
@@ -273,6 +288,7 @@ class StrategyHandler(bt.Strategy):
         self.stop_profit = self.params.stop_profit
         self.stop_loss = self.params.stop_loss
         self.formula_data = self.params.formula_data
+        self.stock_level = self.params.stock_level
 
         if not self.df_factors.empty:
             # 将因子数据中的 trade_date 转换为字符串格式以便匹配
@@ -422,6 +438,8 @@ class StrategyHandler(bt.Strategy):
             self.sell(data=data, size=abs(position.size), price=open_price)
             logging.info(f"{current_date} 提交卖出订单: {stock_ts_code}, 数量: {abs(position.size)}, 开盘价: {open_price:.2f}")
             self.available_cash += abs(position.size)*open_price*(1-self.tax-self.fee)
+            
+
         else:
             logging.info(f"{current_date} 没有持有股票: {stock_ts_code}，无需卖出。")
 
@@ -430,7 +448,7 @@ class StrategyHandler(bt.Strategy):
         买入选中的股票。
         """
 
-        allocation_per_stock = (self.available_cash * 0.8) / self.params.num_stocks  # 每只股票分配的资金
+        allocation_per_stock = (self.available_cash * self.stock_level) / self.params.num_stocks  # 每只股票分配的资金
         logging.debug(f"总可用资金: {self.available_cash:.2f}, 每只股票分配资金: {allocation_per_stock:.2f}")
 
         remaining_stocks = self.params.num_stocks
@@ -643,7 +661,7 @@ class BacktestManager:
     主进程模块
     定义回测框架的整体运行状态，聚合和统一修改参数。
     """
-    def __init__(self, db_url, stock_pool, start_date, end_date, formula_data,rotation_days=30, num_stocks=5,
+    def __init__(self, db_url, stock_pool, start_date, end_date, formula_data,stock_level,rotation_days=30, num_stocks=5,
                  init_money=1000000, commission=0.001, tax=0.001, slippage=0.001,
                  stop_profit=0.1, stop_loss=0.05):
         self.db_url = db_url
@@ -659,6 +677,7 @@ class BacktestManager:
         self.stop_profit = stop_profit  # 止盈百分比
         self.stop_loss = stop_loss      # 止损百分比
         self.formula_data = formula_data
+        self.stock_level = stock_level
         # 初始化数据处理器
         self.data_handler = DataHandler(db_url)
 
@@ -736,7 +755,8 @@ class BacktestManager:
             stop_loss=self.stop_loss,
             tax = self.tax,
             fee = self.commission,
-            formula_data = self.formula_data
+            formula_data = self.formula_data,
+            stock_level = self.stock_level
            
         )
 
@@ -1020,17 +1040,18 @@ if __name__ == '__main__':
         "中小100": '399005.SZ',
     }
     # 定义回测参数
-    START_DATE = '2022-01-01' # 回测开始日期
+    START_DATE = '2014-12-16' # 回测开始日期
     END_DATE = '2024-12-16' # 回测结束日期
-    ROTATION_DAYS = 20     # 轮动天数
-    NUM_STOCKS = 12        # 每次轮动选股数量
+    ROTATION_DAYS = 3    # 轮动天数
+    NUM_STOCKS = 3      # 每次轮动选股数量
     INITIAL_MONEY = 1000000  # 初始资金
     COMMISSION = 0.00025  # 交易佣金比例
     TAX = 0.0005         # 交易税比例
     SLIPPAGE = 0.001    # 滑点比例
-    STOP_PROFIT = 0.4    # 止盈百分比
-    STOP_LOSS = 0.2    # 止损百分比
-    STOCK_POOL_TYPE = "中证500" # 股票池类型
+    STOP_PROFIT = 0.08    # 止盈百分比
+    STOP_LOSS = 0.04    # 止损百分比
+    STOCK_POOL_TYPE = "中小100" # 股票池类型
+    STOCK_LEVEL = 0.8  # 仓位控制
     with open('factors.json', 'r',encoding='utf-8') as f:
        formula_data = json.load(f)
 
@@ -1052,7 +1073,8 @@ if __name__ == '__main__':
         slippage=SLIPPAGE,
         stop_profit=STOP_PROFIT,
         stop_loss=STOP_LOSS,
-        formula_data=formula_data
+        formula_data=formula_data,
+        stock_level = STOCK_LEVEL
     )
     manager.run_backtest()
 
