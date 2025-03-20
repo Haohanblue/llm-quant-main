@@ -131,7 +131,7 @@ class RotationStrategy(bt.Strategy):
 def get_trade_dates(start_date, end_date):
     # 使用SQLAlchemy连接到MySQL数据库
     engine = sqlalchemy.create_engine(
-        'mysql+pymysql://quantuser:Quantuser233.@bj-cynosdbmysql-grp-3upmvv08.sql.tencentcdb.com:27017/stock'
+        'mysql+pymysql://stock_user:Stockuser233@rm-2ze84ic0r024iuwuf4o.mysql.rds.aliyuncs.com:3306/stock'
     )
     
     # 查询交易日历表以获取交易日期
@@ -155,7 +155,7 @@ def get_technical_factors(stock_pool, trade_dates, factors):
     """
     # 使用SQLAlchemy连接到MySQL数据库
     engine = sqlalchemy.create_engine(
-        'mysql+pymysql://quantuser:Quantuser233.@bj-cynosdbmysql-grp-3upmvv08.sql.tencentcdb.com:27017/stock'
+        'mysql+pymysql://stock_user:Stockuser233@rm-2ze84ic0r024iuwuf4o.mysql.rds.aliyuncs.com:3306/stock'
     )
     
     # 构建SQL查询语句
@@ -174,7 +174,7 @@ def get_technical_factors(stock_pool, trade_dates, factors):
 def get_data_from_mysql(stock_pool, trade_dates):
     # 使用SQLAlchemy连接到MySQL数据库
     engine = sqlalchemy.create_engine(
-        'mysql+pymysql://quantuser:Quantuser233.@bj-cynosdbmysql-grp-3upmvv08.sql.tencentcdb.com:27017/stock'
+        'mysql+pymysql://stock_user:Stockuser233@rm-2ze84ic0r024iuwuf4o.mysql.rds.aliyuncs.com:3306/stock'
     )
     
     # 查询daily表中的数据，指定日期范围和股票代码
@@ -197,7 +197,7 @@ def get_data_from_mysql(stock_pool, trade_dates):
 def get_benchmark_data(trade_dates):
     # 使用SQLAlchemy连接到MySQL数据库
     engine = sqlalchemy.create_engine(
-        'mysql+pymysql://quantuser:Quantuser233.@bj-cynosdbmysql-grp-3upmvv08.sql.tencentcdb.com:27017/stock'
+        'mysql+pymysql://stock_user:Stockuser233@rm-2ze84ic0r024iuwuf4o.mysql.rds.aliyuncs.com:3306/stock'
     )
     
     # 查询index_daily_basic表中的上证指数数据

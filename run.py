@@ -1015,7 +1015,7 @@ class BacktestManager:
 
 if __name__ == '__main__':
     # 数据库连接URL
-    DB_URL = 'mysql+pymysql://quantuser:Quantuser233.@bj-cynosdbmysql-grp-3upmvv08.sql.tencentcdb.com:27017/stock'
+    DB_URL = 'mysql+pymysql://stock_user:Stockuser233@rm-2ze84ic0r024iuwuf4o.mysql.rds.aliyuncs.com:3306/stock'
     # data = DataHandler(db_url=DB_URL)
     # stock_pool = data.get_stock_code_lsit()
     # 示例用法:
