@@ -19,6 +19,7 @@ openai = "^1.57.4"
 fastapi = "^0.115.6"
 uvicorn = "^0.34.0"
 pydantic = "^2.10.3"
+zhipuai = "^2.1.5.20250106"
 
 
 [[tool.poetry.source]]

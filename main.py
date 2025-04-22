@@ -167,7 +167,7 @@ def ask_question(request: QuestionRequest):
     print(prompt)
     try:
         # 获取模型的回答
-        result = get_GPT_response(model="gpt-4o", message=prompt)
+        result = get_GPT_response(model="GLM-4-PLUS", message=prompt)
         print("=====输出的回答=====")
         print(result)
     except Exception as e:
